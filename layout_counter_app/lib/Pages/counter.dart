@@ -21,9 +21,13 @@ class _CounterWidgetState extends State<CounterWidget> {
         ElevatedButton(
           onPressed: () {
             setState(() {
-              counter++;
+              if (counter == 0) {
+                counter = 1;
+              } else {
+                counter = 0;
+              }
             });
-            print("Counter Value: $counter"); 
+            print("Counter Value: $counter");
           },
           child: Text('Counter'),
         ),
