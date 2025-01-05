@@ -17,6 +17,33 @@ class SoftDeletedItemsScreen extends StatelessWidget {
     await FirebaseFirestore.instance.collection('users').doc(id).delete();
   }
 
+  void _showDeleteConfirmationDialog(BuildContext context, String id) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Delete Permanently'),
+          content: Text('Are you sure you want to permanently delete this item?'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                _hardDeleteData(id); // Proceed with deletion
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -56,7 +83,7 @@ class SoftDeletedItemsScreen extends StatelessWidget {
                     ),
                     IconButton(
                       onPressed: () {
-                        _hardDeleteData(doc.id);
+                        _showDeleteConfirmationDialog(context, doc.id);
                       },
                       icon: Icon(Icons.delete, color: Colors.red),
                     ),

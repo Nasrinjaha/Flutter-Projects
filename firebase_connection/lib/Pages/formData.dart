@@ -16,29 +16,41 @@ class _formDataCollectionState extends State<formDataCollection> {
       .snapshots();
 
   // Update
-  Future<void> _updateData(id, showData) async {
+  Future<void> _updateData(id, name, email, phone) async {
     await FirebaseFirestore.instance.collection('users').doc(id).update({
-      "name": showData,
+      "name": name,
+      "email": email,
+      "phone": phone,
       'softDelete': false,
     });
   }
 
+  // Prevent Duplicate Email Data
+  Future<bool> _isDuplicateEmail(String email) async {
+    final query = await FirebaseFirestore.instance.collection('users').get();
+
+    for (var doc in query.docs) {
+      final data = doc.data() as Map;
+      if (data['email'] == email) {
+        return true; // Duplicate email found
+      }
+    }
+    return false; // No duplicate found
+  }
+
   // Soft Delete with Snackbar and Undo
   Future<void> _softDeleteData(String id, String name) async {
-    // Temporarily mark the item for deletion
     await FirebaseFirestore.instance.collection('users').doc(id).update({
       'softDelete': true,
     });
 
-    // Show Snackbar with Undo option
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('$name deleted'),
-        duration: Duration(seconds: 3), // Keep the Snackbar visible for 5 seconds
+        duration: Duration(seconds: 3),
         action: SnackBarAction(
           label: 'Undo',
           onPressed: () async {
-            // Revert the soft delete
             await FirebaseFirestore.instance.collection('users').doc(id).update({
               'softDelete': false,
             });
@@ -83,7 +95,7 @@ class _formDataCollectionState extends State<formDataCollection> {
                   children: [
                     IconButton(
                       onPressed: () {
-                        _showDialog(context, index, content['name'], doc.id);
+                        _showDialog(context, index, content['name'], content['email'], content['phone'], doc.id);
                       },
                       icon: Icon(Icons.edit),
                     ),
@@ -113,19 +125,82 @@ class _formDataCollectionState extends State<formDataCollection> {
   }
 
   // Show Dialog Box for edit data
-  void _showDialog(context, index, content, id) {
-    TextEditingController showData = TextEditingController(text: content);
+  void _showDialog(context, index, contentName, contentEmail, contentPhone, id) {
+    TextEditingController nameController = TextEditingController(text: contentName);
+    TextEditingController emailController = TextEditingController(text: contentEmail);
+    TextEditingController phoneController = TextEditingController(text: contentPhone);
+    final _formKey = GlobalKey<FormState>();
 
     showDialog(
       context: (context),
       builder: (context) {
         return AlertDialog(
           title: Text('Edit Data'),
-          content: TextField(
-            controller: showData,
-            decoration: InputDecoration(
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10.0),
+          content: Form(
+            key: _formKey,
+            child: Container(
+              width: double.minPositive,
+              height: 250,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: nameController,
+                    decoration: InputDecoration(
+                      labelText: 'Name',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10.0),
+                      ),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter your name';
+                      } else if (value.length < 3) {
+                        return 'Name must be at least 3 characters long';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 8.0),
+                  TextFormField(
+                    controller: emailController,
+                    decoration: InputDecoration(
+                      labelText: 'Email',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10.0),
+                      ),
+                    ),
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter your email';
+                      } else if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                        return 'Please enter a valid email address';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 8.0),
+                  TextFormField(
+                    controller: phoneController,
+                    decoration: InputDecoration(
+                      labelText: 'Phone',
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10.0),
+                      ),
+                    ),
+                    keyboardType: TextInputType.phone,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter your phone number';
+                      } else if (!RegExp(r'^\d{10,15}$').hasMatch(value)) {
+                        return 'Please enter a valid phone number (10-15 digits)';
+                      }
+                      return null;
+                    },
+                  ),
+                ],
               ),
             ),
           ),
@@ -137,9 +212,22 @@ class _formDataCollectionState extends State<formDataCollection> {
               child: Text("Cancel"),
             ),
             ElevatedButton(
-              onPressed: () {
-                _updateData(id, showData.text);
-                Navigator.pop(context);
+              onPressed: () async {
+                if (_formKey.currentState!.validate()) {
+                  // Check for duplicate email before updating
+                  bool isDuplicate = await _isDuplicateEmail(emailController.text);
+                  if (isDuplicate) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('This email is already in use!'),
+                      ),
+                    );
+                  } else {
+                    // If no duplicates, update the data
+                    _updateData(id, nameController.text, emailController.text, phoneController.text);
+                    Navigator.pop(context);
+                  }
+                }
               },
               child: Text("Save"),
             ),
