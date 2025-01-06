@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "986648440063",
+    "project_id": "final-exam-b496d",
+    "storage_bucket": "final-exam-b496d.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:986648440063:android:a9bed08bb3c8195d4930ca",
+        "android_client_info": {
+          "package_name": "com.example.flutter_final_exam_puc"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD6I2SVfM3TWkSuINZNcdK03KnV00PXJt8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
